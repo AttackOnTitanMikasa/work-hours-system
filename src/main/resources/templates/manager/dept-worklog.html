@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>部门工时查看</title>
+</head>
+<body>
+<div layout:fragment="page-title">部门工时查看</div>
+<div layout:fragment="content">
+
+    <div class="card-glass">
+        <div class="card-title"><i class="bi bi-eye-fill me-2"></i>部门已审批工时 <span class="badge-count" th:text="${page.total}">0</span></div>
+        <form class="row g-3 mb-3" th:action="@{/manager/worklog}" method="get">
+            <div class="col-md-2"><input type="date" name="startDate" class="form-control-dark" th:value="${query.startDate}"></div>
+            <div class="col-md-2"><input type="date" name="endDate" class="form-control-dark" th:value="${query.endDate}"></div>
+            <div class="col-md-2"><button type="submit" class="btn btn-outline">筛选</button></div>
+            <div class="col-md-6 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-sm btn-primary group-btn active" onclick="setGroup('none')">全部</button>
+                <button type="button" class="btn btn-sm btn-outline group-btn" onclick="setGroup('emp')">按员工</button>
+                <button type="button" class="btn btn-sm btn-outline group-btn" onclick="setGroup('project')">按项目</button>
+            </div>
+        </form>
+
+        <div id="tableNormal">
+            <table class="table-glass">
+                <thead><tr><th>员工</th><th>项目</th><th>日期</th><th>工时(h)</th><th>描述</th><th>审批时间</th></tr></thead>
+                <tbody>
+                <tr th:each="w : ${page.records}" class="data-row"
+                    th:attr="data-emp=${w.empName}, data-project=${w.projectName}">
+                    <td th:text="${w.empName}"></td>
+                    <td th:text="${w.projectName}"></td>
+                    <td th:text="${w.workDate}"></td>
+                    <td th:text="${w.hours}"></td>
+                    <td th:text="${w.description}"></td>
+                    <td th:text="${w.reviewTime != null ? #temporals.format(w.reviewTime, 'MM-dd HH:mm') : ''}"></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(page.records)}"><td colspan="6">
+                    <div class="empty-state"><div class="empty-icon"><i class="bi bi-inbox"></i></div>
+                    <div class="empty-text">暂无已审批工时</div></div>
+                </td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="tableGrouped" style="display:none;"></div>
+
+        <div th:if="${page.pages > 1}" class="d-flex justify-content-center mt-3">
+            <nav class="pagination-glass">
+                <a th:each="i : ${#numbers.sequence(1, page.pages)}"
+                   th:href="@{/manager/worklog(page=${i}, startDate=${query.startDate}, endDate=${query.endDate})}"
+                   class="page-link" th:classappend="${i == page.current ? 'active' : ''}" th:text="${i}"></a>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+<script>
+function setGroup(mode) {
+    document.querySelectorAll('.group-btn').forEach(b => {
+        b.classList.remove('active', 'btn-primary');
+        b.classList.add('btn-outline');
+    });
+    event.target.classList.add('active', 'btn-primary');
+    event.target.classList.remove('btn-outline');
+
+    var normal = document.getElementById('tableNormal');
+    var grouped = document.getElementById('tableGrouped');
+
+    if (mode === 'none') {
+        normal.style.display = '';
+        grouped.style.display = 'none';
+        return;
+    }
+
+    normal.style.display = 'none';
+    grouped.style.display = '';
+
+    var rows = document.querySelectorAll('.data-row');
+    var groups = {};
+    var groupKey = mode === 'emp' ? 'emp' : 'project';
+
+    rows.forEach(function(row) {
+        var key = row.getAttribute('data-' + groupKey);
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(row);
+    });
+
+    var html = '';
+    Object.keys(groups).sort().forEach(function(key) {
+        var total = 0;
+        groups[key].forEach(function(r) {
+            total += parseFloat(r.children[3].textContent) || 0;
+        });
+        html += '<div class="mb-3">';
+        html += '<div class="d-flex align-items-center gap-2 mb-2">';
+        html += '<span class="badge bg-primary" style="font-size:0.95rem;">' + key + '</span>';
+        html += '<span class="text-dim small">共 ' + groups[key].length + ' 条，合计 ' + total.toFixed(1) + ' 小时</span>';
+        html += '</div>';
+        html += '<table class="table-glass"><thead><tr><th>员工</th><th>项目</th><th>日期</th><th>工时(h)</th><th>描述</th><th>审批时间</th></tr></thead><tbody>';
+        groups[key].forEach(function(r) {
+            html += '<tr>' + r.innerHTML + '</tr>';
+        });
+        html += '</tbody></table></div>';
+    });
+
+    grouped.innerHTML = html || '<div class="empty-state"><div class="empty-icon"><i class="bi bi-inbox"></i></div><div class="empty-text">暂无数据</div></div>';
+}
+</script>
+</th:block>
+</body>
+</html>

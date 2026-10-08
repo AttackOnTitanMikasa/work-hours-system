@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>部门统计</title>
+</head>
+<body>
+<div layout:fragment="page-title">部门工时统计</div>
+<div layout:fragment="content">
+
+    <div class="card-glass">
+        <div class="card-title"><i class="bi bi-bar-chart-fill me-2"></i>部门工时统计</div>
+        <form class="row g-3 mb-4" th:action="@{/manager/stats}" method="get">
+            <div class="col-md-1"><input type="number" name="year" class="form-control-dark" th:value="${year}" placeholder="年"></div>
+            <div class="col-md-1"><input type="number" name="month" class="form-control-dark" th:value="${month}" placeholder="月"></div>
+            <div class="col-md-2"><button type="submit" class="btn btn-outline">查询</button></div>
+        </form>
+
+        <!-- 汇总卡片 -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-num" th:text="${stats.total_hours != null ? stats.total_hours : 0}">0</div>
+                    <div class="stat-label">部门总工时 (h)</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-num" th:text="${stats.emp_count != null ? stats.emp_count : 0}">0</div>
+                    <div class="stat-label">参与人数</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-num" th:text="${stats.emp_count != null && stats.emp_count > 0 ? #numbers.formatDecimal(stats.total_hours / stats.emp_count, 1, 1) : '0'}">0</div>
+                    <div class="stat-label">人均工时 (h)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 柱状图双列 -->
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-dim mb-3"><i class="bi bi-person-lines-fill me-2"></i>按员工分布</h6>
+                <th:block th:if="${!#lists.isEmpty(stats.byEmployee)}">
+                    <div class="bar-chart" id="empChart">
+                        <th:block th:each="e : ${stats.byEmployee}">
+                            <div class="bar-row">
+                                <span class="bar-label" style="width:80px" th:text="${e.emp_name}"></span>
+                                <div class="bar-track">
+                                    <div class="bar-fill" th:attr="data-hours=${e.total_hours}"></div>
+                                </div>
+                                <span class="bar-val" th:text="${e.total_hours} + 'h'"></span>
+                            </div>
+                        </th:block>
+                    </div>
+                </th:block>
+                <div th:if="${#lists.isEmpty(stats.byEmployee)}" class="empty-state">
+                    <div class="empty-icon"><i class="bi bi-people"></i></div><div class="empty-text">暂无数据</div></div>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-dim mb-3"><i class="bi bi-diagram-3-fill me-2"></i>按项目分布</h6>
+                <th:block th:if="${!#lists.isEmpty(stats.byProject)}">
+                    <div class="bar-chart" id="projChart">
+                        <th:block th:each="p : ${stats.byProject}">
+                            <div class="bar-row">
+                                <span class="bar-label" style="width:80px" th:text="${p.project_name}"></span>
+                                <div class="bar-track">
+                                    <div class="bar-fill green" th:attr="data-hours=${p.total_hours}"></div>
+                                </div>
+                                <span class="bar-val" th:text="${p.total_hours} + 'h'"></span>
+                            </div>
+                        </th:block>
+                    </div>
+                </th:block>
+                <div th:if="${#lists.isEmpty(stats.byProject)}" class="empty-state">
+                    <div class="empty-icon"><i class="bi bi-folder"></i></div><div class="empty-text">暂无数据</div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div layout:fragment="scripts">
+<script>
+function renderBars(containerId) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    var bars = container.querySelectorAll('.bar-fill');
+    var max = 0;
+    bars.forEach(function(bar) {
+        var h = parseFloat(bar.getAttribute('data-hours')) || 0;
+        if (h > max) max = h;
+    });
+    bars.forEach(function(bar) {
+        var h = parseFloat(bar.getAttribute('data-hours')) || 0;
+        bar.style.width = (max > 0 ? (h / max * 100) : 0) + '%';
+    });
+}
+renderBars('empChart');
+renderBars('projChart');
+</script>
+</div>
+</body>
+</html>

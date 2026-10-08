@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>审批工时</title>
+</head>
+<body>
+<div layout:fragment="page-title">待审批工时</div>
+<div layout:fragment="content">
+
+    <div class="card-glass">
+        <div class="card-title"><i class="bi bi-clipboard-check me-2"></i>待审批工时列表 <span class="badge-count" th:text="${page.total}">0</span></div>
+        <div class="d-flex justify-content-end mb-3 gap-2">
+            <span class="text-dim small align-self-center">排序：</span>
+            <a th:href="@{/manager/approval(sort='createTime')}" class="btn btn-sm" th:classappend="${sort == 'createTime' ? 'btn-primary' : 'btn-outline'}">按提交时间</a>
+            <a th:href="@{/manager/approval(sort='empName')}" class="btn btn-sm" th:classappend="${sort == 'empName' ? 'btn-primary' : 'btn-outline'}">按员工姓名</a>
+        </div>
+        <table class="table-glass">
+            <thead><tr>
+                <th><input type="checkbox" id="selectAll"></th>
+                <th>员工</th><th>项目</th><th>日期</th><th>工时(h)</th><th>描述</th><th>提交时间</th><th>操作</th>
+            </tr></thead>
+            <tbody>
+            <tr th:each="w : ${page.records}">
+                <td><input type="checkbox" name="workLogIds" th:value="${w.id}" class="wl-check"></td>
+                <td th:text="${w.empName}"></td>
+                <td th:text="${w.projectName}"></td>
+                <td th:text="${w.workDate}"></td>
+                <td th:text="${w.hours}"></td>
+                <td th:text="${w.description}"></td>
+                <td th:text="${w.createTime != null ? #temporals.format(w.createTime, 'MM-dd HH:mm') : ''}"></td>
+                <td>
+                    <form th:action="@{/manager/approval/single}" method="post" style="display:inline">
+                        <input type="hidden" name="workLogId" th:value="${w.id}">
+                        <input type="hidden" name="approved" value="true">
+                        <button type="submit" class="btn btn-success btn-sm">通过</button>
+                    </form>
+                    <button class="btn btn-danger btn-sm" data-bs-toggle="modal"
+                            th:attr="data-bs-target='#rejectModal' + ${w.id}">驳回</button>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(page.records)}">
+                <td colspan="8">
+                    <div class="empty-state"><div class="empty-icon"><i class="bi bi-check-circle"></i></div>
+                    <div class="empty-text">暂无待审批工时</div><div class="empty-hint">所有工时已处理完毕</div></div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <!-- 批量操作 -->
+        <form id="batchForm" th:action="@{/manager/approval/batch}" method="post" th:if="${!#lists.isEmpty(page.records)}" class="border-top pt-3 mt-3" style="border-color:rgba(0,0,0,.06)!important">
+            <strong class="text-dim">批量操作：</strong>
+            <div id="batchIds"></div>
+            <input type="hidden" name="approved" id="batchApproved" value="true">
+            <button type="button" class="btn btn-success btn-sm ms-2" onclick="doBatch(true)"><i class="bi bi-check-all me-1"></i>批量通过</button>
+            <button type="button" class="btn btn-danger btn-sm ms-2" onclick="doBatchReject()"><i class="bi bi-x-circle me-1"></i>批量驳回</button>
+        </form>
+
+        <div th:if="${page.pages > 1}" class="d-flex justify-content-center mt-3">
+            <nav class="pagination-glass">
+                <a th:each="i : ${#numbers.sequence(1, page.pages)}"
+                   th:href="@{/manager/approval(page=${i}, sort=${sort})}" class="page-link"
+                   th:classappend="${i == page.current ? 'active' : ''}" th:text="${i}"></a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- 驳回弹窗（放在 card-glass 外部） -->
+    <th:block th:each="w : ${page.records}">
+        <div class="modal fade modal-dark" th:id="'rejectModal' + ${w.id}" tabindex="-1">
+            <div class="modal-dialog"><div class="modal-content">
+                    <form th:action="@{/manager/approval/single}" method="post">
+                        <input type="hidden" name="workLogId" th:value="${w.id}">
+                        <input type="hidden" name="approved" value="false">
+                        <div class="modal-header"><h5>驳回工时</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                        <div class="modal-body">
+                            <label class="text-dim small">驳回原因（必填）：</label>
+                            <textarea name="reason" class="form-control-dark" rows="3" required></textarea>
+                        </div>
+                        <div class="modal-footer"><button type="submit" class="btn btn-danger">确认驳回</button></div>
+                    </form>
+            </div></div>
+        </div>
+    </th:block>
+
+    <!-- 批量驳回弹窗 -->
+    <div class="modal fade modal-dark" id="batchRejectModal" tabindex="-1">
+        <div class="modal-dialog"><div class="modal-content">
+                <div class="modal-header"><h5>批量驳回</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <label class="text-dim small">驳回原因（必填）：</label>
+                    <textarea id="batchReason" class="form-control-dark" rows="3" required></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmBatchReject()">确认驳回</button>
+                </div>
+        </div></div>
+    </div>
+</div>
+
+<div layout:fragment="scripts">
+<script>
+document.getElementById('selectAll').addEventListener('change', function() {
+    document.querySelectorAll('.wl-check').forEach(cb => cb.checked = this.checked);
+});
+function doBatch(approved) {
+    var checked = document.querySelectorAll('.wl-check:checked');
+    if (checked.length === 0) { alert('请勾选工时记录'); return; }
+    var container = document.getElementById('batchIds');
+    container.innerHTML = '';
+    checked.forEach(function(cb) {
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'workLogIds';
+        input.value = cb.value;
+        container.appendChild(input);
+    });
+    document.getElementById('batchApproved').value = approved;
+    document.getElementById('batchForm').submit();
+}
+function doBatchReject() {
+    var checked = document.querySelectorAll('.wl-check:checked');
+    if (checked.length === 0) { alert('请勾选工时记录'); return; }
+    document.getElementById('batchReason').value = '';
+    new bootstrap.Modal(document.getElementById('batchRejectModal')).show();
+}
+function confirmBatchReject() {
+    var reason = document.getElementById('batchReason').value.trim();
+    if (!reason) { alert('请填写驳回原因'); return; }
+    var checked = document.querySelectorAll('.wl-check:checked');
+    var container = document.getElementById('batchIds');
+    container.innerHTML = '';
+    checked.forEach(function(cb) {
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'workLogIds';
+        input.value = cb.value;
+        container.appendChild(input);
+    });
+    document.getElementById('batchApproved').value = 'false';
+    var input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'reason';
+    input.value = reason;
+    document.getElementById('batchForm').appendChild(input);
+    document.getElementById('batchForm').submit();
+}
+</script>
+</div>
+</body>
+</html>

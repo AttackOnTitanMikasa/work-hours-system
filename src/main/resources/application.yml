@@ -1,0 +1,35 @@
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: 'jdbc:sqlserver://localhost:12198;databaseName=work_hours_db;encrypt=false'
+    username: sa
+    password: Sa123456
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+  resources:
+    cache:
+      period: 0
+  devtools:
+    restart:
+      enabled: true
+
+mybatis-plus:
+  type-aliases-package: com.workhours.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+logging:
+  level:
+    com.workhours: debug

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>操作日志</title>
+</head>
+<body>
+<div layout:fragment="page-title">操作日志</div>
+<div layout:fragment="content">
+
+    <div class="card-glass">
+        <div class="card-title"><i class="bi bi-journal-text me-2"></i>系统操作日志 <span class="badge-count" th:text="${page.total}">0</span></div>
+        <form class="row g-3 mb-3" th:action="@{/admin/logs}" method="get">
+            <div class="col-md-2">
+                <select name="module" class="form-select-dark">
+                    <option value="">全部模块</option>
+                    <option value="员工管理" th:selected="${module == '员工管理'}">员工管理</option>
+                    <option value="部门管理" th:selected="${module == '部门管理'}">部门管理</option>
+                    <option value="项目管理" th:selected="${module == '项目管理'}">项目管理</option>
+                    <option value="工时审批" th:selected="${module == '工时审批'}">工时审批</option>
+                    <option value="员工授权" th:selected="${module == '员工授权'}">员工授权</option>
+                    <option value="工时填报" th:selected="${module == '工时填报'}">工时填报</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="action" class="form-select-dark">
+                    <option value="">全部操作</option>
+                    <option value="新增" th:selected="${action == '新增'}">新增</option>
+                    <option value="修改" th:selected="${action == '修改'}">修改</option>
+                    <option value="删除" th:selected="${action == '删除'}">删除</option>
+                    <option value="审批通过" th:selected="${action == '审批通过'}">审批通过</option>
+                    <option value="审批驳回" th:selected="${action == '审批驳回'}">审批驳回</option>
+                    <option value="提交" th:selected="${action == '提交'}">提交</option>
+                </select>
+            </div>
+            <div class="col-md-2"><input type="date" name="startDate" class="form-control-dark" th:value="${startDate}"></div>
+            <div class="col-md-2"><input type="date" name="endDate" class="form-control-dark" th:value="${endDate}"></div>
+            <div class="col-md-2"><button type="submit" class="btn btn-outline">筛选</button></div>
+        </form>
+
+        <table class="table-glass">
+            <thead><tr><th>时间</th><th>操作人</th><th>角色</th><th>模块</th><th>操作</th><th>详情</th><th>IP地址</th></tr></thead>
+            <tbody>
+            <tr th:each="log : ${page.records}">
+                <td th:text="${#temporals.format(log.createTime, 'MM-dd HH:mm:ss')}"></td>
+                <td>
+                    <span class="avatar-circle" th:classappend="${log.operatorRole == 'ADMIN'} ? 'avatar-admin' : (${log.operatorRole == 'MANAGER'} ? 'avatar-manager' : 'avatar-employee')"
+                          th:text="${#strings.substring(log.operatorName, 0, 1)}"></span>
+                    <span th:text="${log.operatorName}"></span>
+                </td>
+                <td><span class="badge badge-role" th:text="${log.operatorRole == 'ADMIN' ? '管理员' : (log.operatorRole == 'MANAGER' ? '经理' : '员工')}"></span></td>
+                <td th:text="${log.module}"></td>
+                <td>
+                    <span class="badge" th:classappend="${log.action == '新增'} ? 'badge-approved' : (${log.action == '删除'} ? 'badge-rejected' : (${log.action.contains('驳回')} ? 'badge-rejected' : 'badge-submitted'))"
+                          th:text="${log.action}"></span>
+                </td>
+                <td><span class="text-dim small" th:text="${log.detail}"></span></td>
+                <td><span class="text-dim small" th:text="${log.ip}"></span></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(page.records)}">
+                <td colspan="7">
+                    <div class="empty-state"><div class="empty-icon"><i class="bi bi-journal"></i></div>
+                    <div class="empty-text">暂无操作日志</div></div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div th:if="${page.pages > 1}" class="d-flex justify-content-center mt-3">
+            <nav class="pagination-glass">
+                <a th:each="i : ${#numbers.sequence(1, page.pages)}"
+                   th:href="@{/admin/logs(page=${i}, module=${module}, action=${action}, startDate=${startDate}, endDate=${endDate})}"
+                   class="page-link" th:classappend="${i == page.current ? 'active' : ''}" th:text="${i}"></a>
+            </nav>
+        </div>
+    </div>
+</div>
+</body>
+</html>

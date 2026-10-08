@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>项目管理</title>
+</head>
+<body>
+<div layout:fragment="page-title">项目管理</div>
+<div layout:fragment="content">
+
+    <div class="card-glass">
+        <div class="card-title"><i class="bi bi-folder-plus me-2"></i>新增项目</div>
+        <form th:action="@{/admin/projects}" method="post" class="row g-3">
+            <div class="col-md-3"><input name="name" class="form-control-dark" placeholder="项目名称" required></div>
+            <div class="col-md-3">
+                <select name="deptId" class="form-select-dark" required>
+                    <option value="">--归属部门--</option>
+                    <option th:each="d : ${deptList}" th:value="${d.id}" th:text="${d.name}"></option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select-dark">
+                    <option value="1">启用</option>
+                    <option value="0">禁用</option>
+                </select>
+            </div>
+            <div class="col-md-2"><button type="submit" class="btn btn-primary">添加</button></div>
+        </form>
+    </div>
+
+    <div class="card-glass">
+        <div class="card-title"><i class="bi bi-folder-fill me-2"></i>项目列表 <span class="badge-count" th:text="${page.total}">0</span></div>
+        <form class="row g-3 mb-3" th:action="@{/admin/projects}" method="get">
+            <div class="col-md-2">
+                <select name="deptId" class="form-select-dark">
+                    <option value="">全部部门</option>
+                    <option th:each="d : ${deptList}" th:value="${d.id}" th:text="${d.name}"
+                            th:selected="${deptId != null && deptId == d.id}"></option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select-dark">
+                    <option value="">全部状态</option>
+                    <option value="1" th:selected="${status != null && status == 1}">启用</option>
+                    <option value="0" th:selected="${status != null && status == 0}">禁用</option>
+                </select>
+            </div>
+            <div class="col-md-1"><button type="submit" class="btn btn-outline">筛选</button></div>
+        </form>
+
+        <table class="table-glass">
+            <thead><tr><th>ID</th><th>名称</th><th>归属部门</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+            <tr th:each="p : ${page.records}">
+                <td th:text="${p.id}"></td>
+                <td th:text="${p.name}"></td>
+                <td th:text="${p.deptName}"></td>
+                <td><span class="badge" th:classappend="${p.status == 1} ? 'badge-approved' : 'badge-draft'"
+                          th:text="${p.status == 1} ? '启用' : '禁用'"></span></td>
+                <td>
+                    <button class="btn-sm-glass" type="button" data-bs-toggle="modal" th:data-bs-target="|#editModal${p.id}|" title="编辑"><i class="bi bi-pencil"></i></button>
+                    <a th:href="@{/admin/projects/{id}/delete(id=${p.id})}" class="btn-sm-glass text-danger" title="删除"
+                       onclick="return confirm('确定删除？')"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div th:if="${#lists.isEmpty(page.records)}" class="empty-state">
+            <div class="empty-icon"><i class="bi bi-folder"></i></div>
+            <div class="empty-text">暂无项目</div>
+            <div class="empty-hint">点击上方表单添加第一个项目</div>
+        </div>
+    </div>
+
+    <!-- 编辑弹窗（放在 card-glass 外部、content 内部，避免 backdrop-filter 层叠上下文问题） -->
+    <th:block th:each="p : ${page.records}">
+        <div class="modal fade modal-dark" th:id="|editModal${p.id}|" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">编辑项目</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form th:action="@{/admin/projects/{id}/edit(id=${p.id})}" method="post">
+                        <div class="modal-body">
+                            <div class="mb-2"><label class="text-dim small">名称</label><input name="name" class="form-control-dark" th:value="${p.name}" required></div>
+                            <div class="mb-2"><label class="text-dim small">归属部门</label>
+                                <select name="deptId" class="form-select-dark">
+                                    <option th:each="d : ${deptList}" th:value="${d.id}" th:text="${d.name}"
+                                            th:selected="${d.id == p.deptId}"></option>
+                                </select></div>
+                            <div class="mb-2"><label class="text-dim small">状态</label>
+                                <select name="status" class="form-select-dark">
+                                    <option value="1" th:selected="${p.status == 1}">启用</option>
+                                    <option value="0" th:selected="${p.status == 0}">禁用</option>
+                                </select></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="submit" class="btn btn-primary">保存</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </th:block>
+</div>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>个人统计</title>
+</head>
+<body>
+<div layout:fragment="page-title">个人工时统计</div>
+<div layout:fragment="content">
+
+    <div class="card-glass">
+        <div class="card-title"><i class="bi bi-graph-up me-2"></i>个人工时统计</div>
+        <form class="row g-3 mb-4" th:action="@{/employee/stats}" method="get">
+            <div class="col-md-1"><input type="number" name="year" class="form-control-dark" th:value="${year}" placeholder="年"></div>
+            <div class="col-md-1"><input type="number" name="month" class="form-control-dark" th:value="${month}" placeholder="月"></div>
+            <div class="col-md-2"><button type="submit" class="btn btn-outline">查询</button></div>
+        </form>
+
+        <!-- 汇总卡片 -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-num" id="totalHours">0</div>
+                    <div class="stat-label">月总工时 (h)</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-num" id="avgHours">0</div>
+                    <div class="stat-label">日均工时 (h)</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-num" th:text="${#lists.size(stats)}">0</div>
+                    <div class="stat-label">涉及项目数</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 柱状图：按项目 -->
+        <h6 class="text-dim mb-3"><i class="bi bi-bar-chart me-2"></i>按项目分布</h6>
+        <th:block th:if="${!#lists.isEmpty(stats)}">
+            <div class="bar-chart mb-4" id="projChart">
+                <th:block th:each="s : ${stats}">
+                    <div class="bar-row">
+                        <span class="bar-label" style="width:100px" th:text="${s.project_name}"></span>
+                        <div class="bar-track">
+                            <div class="bar-fill" th:attr="data-hours=${s.total_hours}"></div>
+                        </div>
+                        <span class="bar-val" th:text="${s.total_hours} + 'h'"></span>
+                    </div>
+                </th:block>
+            </div>
+        </th:block>
+        <div th:if="${#lists.isEmpty(stats)}" class="empty-state">
+            <div class="empty-icon"><i class="bi bi-bar-chart"></i></div>
+            <div class="empty-text">暂无已审批工时</div>
+            <div class="empty-hint">本月暂无已审批的工时数据</div>
+        </div>
+    </div>
+</div>
+
+<div layout:fragment="scripts">
+<script>
+// 计算汇总
+var bars = document.querySelectorAll('#projChart .bar-fill');
+var total = 0;
+bars.forEach(function(bar) {
+    total += parseFloat(bar.getAttribute('data-hours')) || 0;
+});
+document.getElementById('totalHours').textContent = total;
+var workDays = /*[[${workDays}]]*/ 0;
+document.getElementById('avgHours').textContent = workDays > 0 ? (total / workDays).toFixed(1) : '0.0';
+
+// 渲染柱状图
+var max = 0;
+bars.forEach(function(bar) {
+    var h = parseFloat(bar.getAttribute('data-hours')) || 0;
+    if (h > max) max = h;
+});
+bars.forEach(function(bar) {
+    var h = parseFloat(bar.getAttribute('data-hours')) || 0;
+    bar.style.width = (max > 0 ? (h / max * 100) : 0) + '%';
+});
+</script>
+</div>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>控制台</title>
+</head>
+<body>
+<div layout:fragment="page-title" th:text="${user.role == 'ADMIN' ? '管理员控制台' : (user.role == 'MANAGER' ? '经理控制台' : '员工控制台')}">控制台</div>
+<div layout:fragment="content">
+
+    <!-- ============ 管理员统计卡片 ============ -->
+    <div class="row g-4 mb-4" th:if="${user.role == 'ADMIN'}">
+        <div class="col-md-3">
+            <div class="card-glass stat-card-dashboard">
+                <div class="dash-stat-icon blue"><i class="bi bi-people-fill"></i></div>
+                <div class="stat-num" th:text="${empCount}">0</div>
+                <div class="text-dim small">员工总数</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card-glass stat-card-dashboard">
+                <div class="dash-stat-icon purple"><i class="bi bi-building"></i></div>
+                <div class="stat-num" th:text="${deptCount}">0</div>
+                <div class="text-dim small">部门总数</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card-glass stat-card-dashboard">
+                <div class="dash-stat-icon green"><i class="bi bi-clock-history"></i></div>
+                <div class="stat-num" th:text="${monthHours}">0</div>
+                <div class="text-dim small">本月总工时</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card-glass stat-card-dashboard">
+                <div class="dash-stat-icon amber"><i class="bi bi-inbox-fill"></i></div>
+                <div class="stat-num" th:text="${pendingCount}">0</div>
+                <div class="text-dim small">待审批工时</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ 经理统计卡片 ============ -->
+    <div class="row g-4 mb-4" th:if="${user.role == 'MANAGER'}">
+        <div class="col-md-3">
+            <div class="card-glass stat-card-dashboard">
+                <div class="dash-stat-icon blue"><i class="bi bi-people-fill"></i></div>
+                <div class="stat-num" th:text="${deptEmpCount}">0</div>
+                <div class="text-dim small">部门员工</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card-glass stat-card-dashboard">
+                <div class="dash-stat-icon purple"><i class="bi bi-folder-fill"></i></div>
+                <div class="stat-num" th:text="${deptProjectCount}">0</div>
+                <div class="text-dim small">部门项目</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card-glass stat-card-dashboard">
+                <div class="dash-stat-icon green"><i class="bi bi-bar-chart-fill"></i></div>
+                <div class="stat-num" th:text="${deptMonthHours}">0</div>
+                <div class="text-dim small">部门本月工时</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card-glass stat-card-dashboard">
+                <div class="dash-stat-icon amber"><i class="bi bi-inbox-fill"></i></div>
+                <div class="stat-num" th:text="${pendingCount}">0</div>
+                <div class="text-dim small">待审批工时</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ 员工统计卡片 ============ -->
+    <div class="row g-4 mb-4" th:if="${user.role == 'EMPLOYEE'}">
+        <div class="col-md-3">
+            <div class="card-glass d-flex align-items-center gap-3">
+                <div class="dash-stat-icon blue"><i class="bi bi-calendar-check"></i></div>
+                <div>
+                    <div class="stat-num" style="font-size:1.6rem" th:text="${todayHours}">0</div>
+                    <div class="text-dim small">今日工时 (h)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card-glass d-flex align-items-center gap-3">
+                <div class="dash-stat-icon purple"><i class="bi bi-clock-history"></i></div>
+                <div>
+                    <div class="stat-num" style="font-size:1.6rem" th:text="${monthHours}">0</div>
+                    <div class="text-dim small">本月工时 (h)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card-glass d-flex align-items-center gap-3">
+                <div class="dash-stat-icon green"><i class="bi bi-folder-fill"></i></div>
+                <div>
+                    <div class="stat-num" style="font-size:1.6rem" th:text="${projectCount}">0</div>
+                    <div class="text-dim small">参与项目</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快捷操作 -->
+    <div class="card-glass">
+        <div class="card-title"><i class="bi bi-lightning-charge-fill me-2"></i>快捷操作</div>
+        <div class="d-flex flex-wrap gap-3">
+            <th:block th:if="${user.role == 'ADMIN'}">
+                <a th:href="@{/admin/employees}" class="quick-action"><i class="bi bi-people-fill"></i> 员工管理</a>
+                <a th:href="@{/admin/departments}" class="quick-action"><i class="bi bi-building"></i> 部门管理</a>
+                <a th:href="@{/admin/projects}" class="quick-action"><i class="bi bi-folder-fill"></i> 项目管理</a>
+            </th:block>
+            <th:block th:if="${user.role == 'MANAGER'}">
+                <a th:href="@{/manager/auth}" class="quick-action"><i class="bi bi-person-check-fill"></i> 员工授权</a>
+                <a th:href="@{/manager/approval}" class="quick-action"><i class="bi bi-clipboard-check"></i> 审批工时</a>
+                <a th:href="@{/manager/stats}" class="quick-action"><i class="bi bi-bar-chart-fill"></i> 部门统计</a>
+            </th:block>
+            <th:block th:if="${user.role == 'EMPLOYEE'}">
+                <a th:href="@{/employee/worklog}" class="quick-action"><i class="bi bi-pencil-square"></i> 填报工时</a>
+                <a th:href="@{/employee/stats}" class="quick-action"><i class="bi bi-graph-up"></i> 个人统计</a>
+            </th:block>
+        </div>
+    </div>
+
+    <!-- 最近工时 -->
+    <div class="card-glass mt-4">
+        <div class="card-title"><i class="bi bi-list-ul me-2"></i>最近工时记录</div>
+        <table class="table-glass" th:if="${!#lists.isEmpty(recentLogs)}">
+            <thead>
+                <tr>
+                    <th:block th:if="${user.role == 'ADMIN'}"><th>员工</th></th:block>
+                    <th>项目</th><th>日期</th><th>工时(h)</th><th>状态</th>
+                </tr>
+            </thead>
+            <tbody>
+            <tr th:each="w : ${recentLogs}">
+                <td th:if="${user.role == 'ADMIN'}" th:text="${w.empName}"></td>
+                <td th:text="${w.projectName}"></td>
+                <td th:text="${w.workDate}"></td>
+                <td th:text="${w.hours}"></td>
+                <td>
+                    <span class="badge" th:classappend="${w.status == 'DRAFT'} ? 'badge-draft' : (${w.status == 'SUBMITTED'} ? 'badge-submitted' : (${w.status == 'APPROVED'} ? 'badge-approved' : 'badge-rejected'))"
+                          th:text="${w.status == 'DRAFT'} ? '草稿' : (${w.status == 'SUBMITTED'} ? '已提交' : (${w.status == 'APPROVED'} ? '已通过' : '已驳回'))"></span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div th:if="${#lists.isEmpty(recentLogs)}" class="empty-state">
+            <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+            <div class="empty-text">暂无工时记录</div>
+            <div class="empty-hint" th:if="${user.role == 'EMPLOYEE'}">点击「填报工时」开始记录</div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

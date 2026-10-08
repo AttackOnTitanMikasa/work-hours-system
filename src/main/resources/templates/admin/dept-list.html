@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>部门管理</title>
+</head>
+<body>
+<div layout:fragment="page-title">部门管理</div>
+<div layout:fragment="content">
+
+    <div class="card-glass">
+        <div class="card-title"><i class="bi bi-building-add me-2"></i>新增部门</div>
+        <form th:action="@{/admin/departments}" method="post" class="row g-3">
+            <div class="col-md-4"><input name="name" class="form-control-dark" placeholder="部门名称" required></div>
+            <div class="col-md-4"><input name="code" class="form-control-dark" placeholder="部门编码" required></div>
+            <div class="col-md-2"><button type="submit" class="btn btn-primary">添加</button></div>
+        </form>
+    </div>
+
+    <div class="card-glass">
+        <div class="card-title"><i class="bi bi-building me-2"></i>部门列表 <span class="badge-count" th:text="${page.total}">0</span></div>
+        <table class="table-glass w-50">
+            <thead><tr><th>ID</th><th>名称</th><th>编码</th><th>操作</th></tr></thead>
+            <tbody>
+            <tr th:each="d : ${page.records}">
+                <td th:text="${d.id}"></td>
+                <td th:text="${d.name}"></td>
+                <td th:text="${d.code}"></td>
+                <td>
+                    <button class="btn-sm-glass" type="button" data-bs-toggle="modal" th:data-bs-target="|#editModal${d.id}|" title="编辑"><i class="bi bi-pencil"></i></button>
+                    <a th:href="@{/admin/departments/{id}/delete(id=${d.id})}" class="btn-sm-glass text-danger" title="删除"
+                       onclick="return confirm('确定删除？')"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div th:if="${#lists.isEmpty(page.records)}" class="empty-state">
+            <div class="empty-icon"><i class="bi bi-building"></i></div>
+            <div class="empty-text">暂无部门</div>
+            <div class="empty-hint">点击上方表单添加第一个部门</div>
+        </div>
+    </div>
+
+    <!-- 编辑弹窗（放在 card-glass 外部、content 内部，避免 backdrop-filter 层叠上下文问题） -->
+    <th:block th:each="d : ${page.records}">
+        <div class="modal fade modal-dark" th:id="|editModal${d.id}|" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">编辑部门</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form th:action="@{/admin/departments/{id}/edit(id=${d.id})}" method="post">
+                        <div class="modal-body">
+                            <div class="mb-2"><label class="text-dim small">名称</label><input name="name" class="form-control-dark" th:value="${d.name}" required></div>
+                            <div class="mb-2"><label class="text-dim small">编码</label><input name="code" class="form-control-dark" th:value="${d.code}" required></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="submit" class="btn btn-primary">保存</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </th:block>
+</div>
+</body>
+</html>

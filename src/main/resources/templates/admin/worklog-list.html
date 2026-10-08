@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>员工工时查看</title>
+</head>
+<body>
+<div layout:fragment="page-title">员工工时查看</div>
+<div layout:fragment="content">
+
+    <div class="card-glass">
+        <div class="card-title"><i class="bi bi-eye-fill me-2"></i>员工工时记录 <span class="badge-count" th:text="${page.total}">0</span></div>
+        <form class="row g-3 mb-3" th:action="@{/admin/worklog}" method="get">
+            <div class="col-md-2">
+                <select name="deptId" class="form-select-dark">
+                    <option value="">全部部门</option>
+                    <option th:each="d : ${deptList}" th:value="${d.id}" th:text="${d.name}"
+                            th:selected="${deptId != null && deptId == d.id}"></option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select-dark">
+                    <option value="">全部状态</option>
+                    <option value="DRAFT" th:selected="${query.status == 'DRAFT'}">草稿</option>
+                    <option value="SUBMITTED" th:selected="${query.status == 'SUBMITTED'}">已提交</option>
+                    <option value="APPROVED" th:selected="${query.status == 'APPROVED'}">已通过</option>
+                    <option value="REJECTED" th:selected="${query.status == 'REJECTED'}">已驳回</option>
+                </select>
+            </div>
+            <div class="col-md-2"><input type="date" name="startDate" class="form-control-dark" th:value="${query.startDate}"></div>
+            <div class="col-md-2"><input type="date" name="endDate" class="form-control-dark" th:value="${query.endDate}"></div>
+            <div class="col-md-2"><button type="submit" class="btn btn-outline">筛选</button></div>
+        </form>
+
+        <table class="table-glass">
+            <thead><tr><th>员工</th><th>部门</th><th>项目</th><th>日期</th><th>工时(h)</th><th>描述</th><th>状态</th><th>提交时间</th></tr></thead>
+            <tbody>
+            <tr th:each="w : ${page.records}">
+                <td th:text="${w.empName}"></td>
+                <td th:text="${w.deptName}"></td>
+                <td th:text="${w.projectName}"></td>
+                <td th:text="${w.workDate}"></td>
+                <td th:text="${w.hours}"></td>
+                <td th:text="${w.description}"></td>
+                <td>
+                    <span class="badge" th:classappend="${w.status == 'DRAFT'} ? 'badge-draft' : (${w.status == 'SUBMITTED'} ? 'badge-submitted' : (${w.status == 'APPROVED'} ? 'badge-approved' : 'badge-rejected'))"
+                          th:text="${w.status == 'DRAFT'} ? '草稿' : (${w.status == 'SUBMITTED'} ? '已提交' : (${w.status == 'APPROVED'} ? '已通过' : '已驳回'))"></span>
+                </td>
+                <td th:text="${w.createTime != null ? #temporals.format(w.createTime, 'MM-dd HH:mm') : ''}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(page.records)}">
+                <td colspan="8">
+                    <div class="empty-state"><div class="empty-icon"><i class="bi bi-inbox"></i></div>
+                    <div class="empty-text">暂无工时记录</div></div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div th:if="${page.pages > 1}" class="d-flex justify-content-center mt-3">
+            <nav class="pagination-glass">
+                <a th:each="i : ${#numbers.sequence(1, page.pages)}"
+                   th:href="@{/admin/worklog(page=${i}, deptId=${deptId}, status=${query.status}, startDate=${query.startDate}, endDate=${query.endDate})}"
+                   class="page-link" th:classappend="${i == page.current ? 'active' : ''}" th:text="${i}"></a>
+            </nav>
+        </div>
+    </div>
+</div>
+</body>
+</html>

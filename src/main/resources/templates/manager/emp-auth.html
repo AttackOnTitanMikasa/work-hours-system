@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>员工项目授权</title>
+</head>
+<body>
+<div layout:fragment="page-title">员工项目授权</div>
+<div layout:fragment="content">
+
+    <div class="row">
+        <div class="col-md-5">
+            <div class="card-glass">
+                <div class="card-title"><i class="bi bi-people-fill me-2"></i>本部门员工</div>
+                <table class="table-glass">
+                    <thead><tr><th>姓名</th><th>手机号</th><th>操作</th></tr></thead>
+                    <tbody>
+                    <tr th:each="e : ${employees}">
+                        <td th:text="${e.name}"></td>
+                        <td th:text="${e.phone}"></td>
+                        <td><a th:href="@{/manager/auth(empId=${e.id})}" class="btn btn-outline btn-sm">授权</a></td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div th:if="${#lists.isEmpty(employees)}" class="empty-state">
+                    <div class="empty-icon"><i class="bi bi-people"></i></div>
+                    <div class="empty-text">本部门暂无员工</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="card-glass" th:if="${selectedEmpId != null}">
+                <div class="card-title"><i class="bi bi-person-check-fill me-2"></i>项目授权 <span class="text-dim small">(员工ID: [[${selectedEmpId}]])</span></div>
+                <form th:action="@{/manager/auth}" method="post">
+                    <input type="hidden" name="empId" th:value="${selectedEmpId}">
+                    <p class="text-dim small">勾选该员工可参与的项目：</p>
+                    <div class="mb-3">
+                        <div th:each="p : ${deptProjects}" class="form-check">
+                            <input class="form-check-input" type="checkbox" name="projectIds"
+                                   th:value="${p.id}"
+                                   th:checked="${#lists.isEmpty(authProjects) ? false : authProjects.![projectId].contains(p.id)}">
+                            <label class="form-check-label" th:text="${p.name}"></label>
+                        </div>
+                    </div>
+                    <div th:if="${#lists.isEmpty(deptProjects)}" class="text-dim">本部门暂无项目</div>
+                    <button type="submit" class="btn btn-primary mt-2">保存授权</button>
+                </form>
+            </div>
+            <div class="card-glass" th:unless="${selectedEmpId != null}">
+                <i class="bi bi-arrow-left-circle me-2"></i>选择左侧员工进行项目授权
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

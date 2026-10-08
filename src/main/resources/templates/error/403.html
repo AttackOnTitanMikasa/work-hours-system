@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>403</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="card-glass text-center py-5">
+        <i class="bi bi-shield-lock" style="font-size:4rem;color:#ef4444"></i>
+        <h1 class="display-4 text-dim mt-3">403</h1>
+        <p class="lead text-dim">您没有权限访问此页面</p>
+        <a th:href="@{/}" class="btn btn-primary mt-2">返回首页</a>
+    </div>
+</div>
+</body>
+</html>

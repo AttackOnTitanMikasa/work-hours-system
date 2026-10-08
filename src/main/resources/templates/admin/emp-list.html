@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>员工管理</title>
+</head>
+<body>
+<div layout:fragment="page-title">员工管理</div>
+<div layout:fragment="content">
+
+    <div class="card-glass">
+        <div class="card-title"><i class="bi bi-person-plus-fill me-2"></i>新增员工</div>
+        <form th:action="@{/admin/employees}" method="post" class="row g-3">
+            <div class="col-md-2"><input name="name" class="form-control-dark" placeholder="姓名" required></div>
+            <div class="col-md-2"><input name="phone" class="form-control-dark" placeholder="手机号" required></div>
+            <div class="col-md-2"><input name="password" class="form-control-dark" placeholder="密码(默认123456)" autocomplete="new-password"></div>
+            <div class="col-md-2"><input name="email" class="form-control-dark" placeholder="邮箱"></div>
+            <div class="col-md-1">
+                <select name="role" class="form-select-dark" required>
+                    <option value="EMPLOYEE">员工</option>
+                    <option value="MANAGER">经理</option>
+                    <option value="ADMIN">管理员</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="deptId" class="form-select-dark" required>
+                    <option value="">--部门--</option>
+                    <option th:each="d : ${deptList}" th:value="${d.id}" th:text="${d.name}"></option>
+                </select>
+            </div>
+            <div class="col-md-1"><button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-lg"></i></button></div>
+        </form>
+    </div>
+
+    <div class="card-glass">
+        <div class="card-title"><i class="bi bi-people-fill me-2"></i>员工列表 <span class="badge-count" th:text="${page.total}">0</span></div>
+        <form class="row g-3 mb-3" th:action="@{/admin/employees}" method="get">
+            <div class="col-md-2">
+                <select name="deptId" class="form-select-dark">
+                    <option value="">全部部门</option>
+                    <option th:each="d : ${deptList}" th:value="${d.id}" th:text="${d.name}"
+                            th:selected="${deptId != null && deptId == d.id}"></option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="role" class="form-select-dark">
+                    <option value="">全部角色</option>
+                    <option value="ADMIN" th:selected="${role == 'ADMIN'}">管理员</option>
+                    <option value="MANAGER" th:selected="${role == 'MANAGER'}">经理</option>
+                    <option value="EMPLOYEE" th:selected="${role == 'EMPLOYEE'}">员工</option>
+                </select>
+            </div>
+            <div class="col-md-1"><button type="submit" class="btn btn-outline">筛选</button></div>
+        </form>
+
+        <table class="table-glass">
+            <thead><tr><th>ID</th><th>姓名</th><th>手机号</th><th>邮箱</th><th>角色</th><th>部门</th><th>操作</th></tr></thead>
+            <tbody>
+            <tr th:each="e : ${page.records}">
+                <td th:text="${e.id}"></td>
+                <td>
+                    <span class="avatar-circle" th:classappend="${e.role == 'ADMIN'} ? 'avatar-admin' : (${e.role == 'MANAGER'} ? 'avatar-manager' : 'avatar-employee')"
+                          th:text="${#strings.substring(e.name, 0, 1)}"></span>
+                    <span th:text="${e.name}"></span>
+                </td>
+                <td th:text="${e.phone}"></td>
+                <td th:text="${e.email}"></td>
+                <td><span class="badge badge-role"
+                          th:text="${e.role == 'ADMIN' ? '管理员' : (e.role == 'MANAGER' ? '经理' : '员工')}"></span></td>
+                <td th:text="${e.deptName}"></td>
+                <td>
+                    <button class="btn-sm-glass" type="button" data-bs-toggle="modal" th:data-bs-target="|#editModal${e.id}|" title="编辑"><i class="bi bi-pencil"></i></button>
+                    <a th:href="@{/admin/employees/{id}/delete(id=${e.id})}" class="btn-sm-glass text-danger" title="删除"
+                       onclick="return confirm('确定删除该员工？')"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div th:if="${#lists.isEmpty(page.records)}">
+            <div class="empty-state"><div class="empty-icon"><i class="bi bi-people"></i></div><div class="empty-text">暂无员工</div><div class="empty-hint">请先创建部门，再添加员工</div></div>
+        </div>
+
+        <div th:if="${page.pages > 1}" class="d-flex justify-content-center mt-3">
+            <nav class="pagination-glass">
+                <a th:each="i : ${#numbers.sequence(1, page.pages)}"
+                   th:href="@{/admin/employees(page=${i}, deptId=${deptId}, role=${role})}"
+                   class="page-link" th:classappend="${i == page.current ? 'active' : ''}" th:text="${i}"></a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- 编辑弹窗（放在 card-glass 外部、content 内部，避免 backdrop-filter 层叠上下文问题） -->
+    <th:block th:each="e : ${page.records}">
+        <div class="modal fade modal-dark" th:id="|editModal${e.id}|" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">编辑员工</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form th:action="@{/admin/employees/{id}/edit(id=${e.id})}" method="post">
+                        <div class="modal-body">
+                            <div class="mb-2"><label class="text-dim small">姓名</label><input name="name" class="form-control-dark" th:value="${e.name}" required></div>
+                            <div class="mb-2"><label class="text-dim small">手机号</label><input name="phone" class="form-control-dark" th:value="${e.phone}" required></div>
+                            <div class="mb-2"><label class="text-dim small">密码(留空不修改)</label><input name="password" class="form-control-dark" type="password"></div>
+                            <div class="mb-2"><label class="text-dim small">邮箱</label><input name="email" class="form-control-dark" th:value="${e.email}"></div>
+                            <div class="mb-2"><label class="text-dim small">角色</label>
+                                <select name="role" class="form-select-dark">
+                                    <option value="ADMIN" th:selected="${e.role == 'ADMIN'}">管理员</option>
+                                    <option value="MANAGER" th:selected="${e.role == 'MANAGER'}">经理</option>
+                                    <option value="EMPLOYEE" th:selected="${e.role == 'EMPLOYEE'}">员工</option>
+                                </select></div>
+                            <div class="mb-2"><label class="text-dim small">部门</label>
+                                <select name="deptId" class="form-select-dark">
+                                    <option th:each="d : ${deptList}" th:value="${d.id}" th:text="${d.name}"
+                                            th:selected="${d.id == e.deptId}"></option>
+                                </select></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="submit" class="btn btn-primary">保存</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </th:block>
+</div>
+</body>
+</html>

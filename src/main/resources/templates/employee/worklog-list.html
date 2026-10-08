@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>我的工时</title>
+</head>
+<body>
+<div layout:fragment="page-title">我的工时</div>
+<div layout:fragment="content">
+
+    <!-- 仅员工可见填报按钮 -->
+    <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#createModal"
+            sec:authorize="hasRole('EMPLOYEE')">
+        <i class="bi bi-plus-lg me-1"></i>填报工时
+    </button>
+
+    <div class="card-glass">
+        <div class="card-title"><i class="bi bi-list-ul me-2"></i>工时列表 <span class="badge-count" th:text="${page.total}">0</span></div>
+        <form class="row g-3 mb-3" th:action="@{/employee/worklog}" method="get">
+            <div class="col-md-2">
+                <select name="projectId" class="form-select-dark">
+                    <option value="">全部项目</option>
+                    <option th:each="p : ${authProjects}" th:value="${p.projectId}"
+                            th:text="${p.projectName}" th:selected="${query.projectId != null && query.projectId == p.projectId}"></option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <select name="status" class="form-select-dark">
+                    <option value="">全部状态</option>
+                    <option value="DRAFT" th:selected="${query.status == 'DRAFT'}">草稿</option>
+                    <option value="SUBMITTED" th:selected="${query.status == 'SUBMITTED'}">已提交</option>
+                    <option value="APPROVED" th:selected="${query.status == 'APPROVED'}">已通过</option>
+                    <option value="REJECTED" th:selected="${query.status == 'REJECTED'}">已驳回</option>
+                </select>
+            </div>
+            <div class="col-md-2"><input type="date" name="startDate" class="form-control-dark" th:value="${query.startDate}"></div>
+            <div class="col-md-2"><input type="date" name="endDate" class="form-control-dark" th:value="${query.endDate}"></div>
+            <div class="col-md-2"><button type="submit" class="btn btn-outline">筛选</button></div>
+        </form>
+
+        <table class="table-glass">
+            <thead><tr>
+                <th>项目</th><th>日期</th><th>工时(h)</th><th>描述</th><th>状态</th><th>驳回原因</th>
+                <th sec:authorize="hasRole('EMPLOYEE')">操作</th>
+            </tr></thead>
+            <tbody>
+            <tr th:each="w : ${page.records}">
+                <td th:text="${w.projectName}"></td>
+                <td th:text="${w.workDate}"></td>
+                <td th:text="${w.hours}"></td>
+                <td th:text="${w.description}"></td>
+                <td>
+                    <span class="badge" th:classappend="${w.status == 'DRAFT'} ? 'badge-draft' : (${w.status == 'SUBMITTED'} ? 'badge-submitted' : (${w.status == 'APPROVED'} ? 'badge-approved' : 'badge-rejected'))"
+                          th:text="${w.status == 'DRAFT'} ? '草稿' : (${w.status == 'SUBMITTED'} ? '已提交' : (${w.status == 'APPROVED'} ? '已通过' : '已驳回'))"></span>
+                </td>
+                <td th:text="${w.rejectReason}"></td>
+                <!-- 仅员工可见操作列 -->
+                <td sec:authorize="hasRole('EMPLOYEE')">
+                    <span th:if="${w.status == 'DRAFT' || w.status == 'REJECTED'}">
+                        <button class="btn-sm-glass" type="button" th:onclick="|new bootstrap.Modal('#editModal${w.id}').show()|" title="修改"><i class="bi bi-pencil"></i></button>
+                        <a th:href="@{/employee/worklog/{id}/submit(id=${w.id})}" class="btn-sm-glass text-success" title="提交" onclick="return confirm('提交后不可再修改，确定？')"><i class="bi bi-send"></i></a>
+                        <a th:href="@{/employee/worklog/{id}/delete(id=${w.id})}" class="btn-sm-glass text-danger" title="删除" onclick="return confirm('确定删除？')"><i class="bi bi-trash"></i></a>
+                    </span>
+                    <span th:unless="${w.status == 'DRAFT' || w.status == 'REJECTED'}" class="text-dim small">--</span>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(page.records)}">
+                <td colspan="7">
+                    <div class="empty-state"><div class="empty-icon"><i class="bi bi-pencil-square"></i></div>
+                    <div class="empty-text">暂无工时记录</div></div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div th:if="${page.pages > 1}" class="d-flex justify-content-center mt-3">
+            <nav class="pagination-glass">
+                <a th:each="i : ${#numbers.sequence(1, page.pages)}"
+                   th:href="@{/employee/worklog(page=${i}, projectId=${query.projectId}, status=${query.status}, startDate=${query.startDate}, endDate=${query.endDate})}"
+                   class="page-link" th:classappend="${i == page.current ? 'active' : ''}" th:text="${i}"></a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- 编辑弹窗（仅员工可见） -->
+    <th:block sec:authorize="hasRole('EMPLOYEE')">
+        <th:block th:each="w : ${page.records}">
+            <div class="modal fade modal-dark" th:id="|editModal${w.id}|" tabindex="-1" th:if="${w.status == 'DRAFT' || w.status == 'REJECTED'}">
+                <div class="modal-dialog"><div class="modal-content">
+                    <form th:action="@{/employee/worklog/{id}/edit(id=${w.id})}" method="post">
+                        <div class="modal-header"><h5>修改工时</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                        <div class="modal-body">
+                            <div class="mb-2"><label class="text-dim small">项目</label>
+                                <select name="projectId" class="form-select-dark" required>
+                                    <option th:each="p : ${authProjects}" th:value="${p.projectId}"
+                                            th:text="${p.projectName}" th:selected="${p.projectId == w.projectId}"></option>
+                                </select></div>
+                            <div class="mb-2"><label class="text-dim small">日期</label><input type="date" name="workDate" class="form-control-dark" th:value="${w.workDate}" required></div>
+                            <div class="mb-2"><label class="text-dim small">工时(0.5-24h)</label><input type="number" name="hours" class="form-control-dark" th:value="${w.hours}" step="0.5" min="0.5" max="24" required></div>
+                            <div class="mb-2"><label class="text-dim small">描述</label><textarea name="description" class="form-control-dark" th:text="${w.description}"></textarea></div>
+                        </div>
+                        <div class="modal-footer"><button type="submit" class="btn btn-primary">保存</button></div>
+                    </form>
+                </div></div>
+            </div>
+        </th:block>
+    </th:block>
+
+    <script>
+    function submitDirect() {
+        document.getElementById('directSubmit').value = 'true';
+        document.getElementById('createForm').submit();
+    }
+    </script>
+
+    <!-- 填报弹窗（仅员工可见） -->
+    <div class="modal fade modal-dark" id="createModal" tabindex="-1" sec:authorize="hasRole('EMPLOYEE')">
+        <div class="modal-dialog"><div class="modal-content">
+                <form th:action="@{/employee/worklog}" method="post" id="createForm">
+                    <input type="hidden" name="directSubmit" id="directSubmit" value="false">
+                    <div class="modal-header"><h5><i class="bi bi-plus-circle me-2"></i>填报工时</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body">
+                        <div class="mb-2"><label class="text-dim small">项目</label>
+                            <select name="projectId" class="form-select-dark" required>
+                                <option value="">--选择项目--</option>
+                                <option th:each="p : ${authProjects}" th:value="${p.projectId}" th:text="${p.projectName}"></option>
+                            </select></div>
+                        <div class="mb-2"><label class="text-dim small">工作日期</label><input type="date" name="workDate" class="form-control-dark" required></div>
+                        <div class="mb-2"><label class="text-dim small">工时(0.5-24h, 精度0.5)</label><input type="number" name="hours" class="form-control-dark" step="0.5" min="0.5" max="24" required></div>
+                        <div class="mb-2"><label class="text-dim small">工作描述(选填)</label><textarea name="description" class="form-control-dark" rows="3"></textarea></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-secondary">保存为草稿</button>
+                        <button type="button" class="btn btn-primary" onclick="submitDirect()">保存并提交</button>
+                    </div>
+                </form>
+        </div></div>
+    </div>
+</div>
+</body>
+</html>
